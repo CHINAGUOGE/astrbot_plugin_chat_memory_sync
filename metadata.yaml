@@ -3,7 +3,7 @@ display_name: 群聊与私聊记忆同步
 desc: 让私聊与群聊共用同一个持久化记忆系统，以 QQ 号作为区分不同用户的凭据，不影响其他记忆插件。
 short_desc: 私聊与群聊共享记忆，以 QQ 号区分用户。
 author: Guoge Studios
-version: "1.0.0"
+version: "1.0.1"
 repo: ""
 support_platforms:
   - aiocqhttp

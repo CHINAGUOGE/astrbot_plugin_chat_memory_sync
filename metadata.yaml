@@ -5,7 +5,6 @@ short_desc: 私聊与群聊共享记忆，以 QQ 号区分用户。
 author: Guoge Studios
 version: "1.0.0"
 repo: ""
-copyright: "© 2026 Guoge Studios"
 support_platforms:
   - aiocqhttp
   - qq_official

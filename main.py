@@ -10,10 +10,9 @@
 import logging
 
 from astrbot.core.platform.astr_message_event import AstrMessageEvent
-from astrbot.core.provider.entities import ProviderRequest
 from astrbot.core.star import Context
 from astrbot.core.star.base import Star
-from astrbot.core.star.register.star_handler import register_on_llm_request
+from astrbot.core.star.register.star_handler import register_on_waiting_llm_request
 
 logger = logging.getLogger("astrbot")
 
@@ -28,7 +27,7 @@ class ChatMemorySync(Star):
 
     def __init__(self, context: Context, config: dict | None = None) -> None:
         super().__init__(context, config)
-        # 统一记忆会话前缀，用于构造以用户为维度的会话 ID
+        # 统一记忆会话前缀
         self._MEMORY_SESSION_PREFIX = "chat_memory_sync:user"
 
     async def initialize(self) -> None:
@@ -60,17 +59,16 @@ class ChatMemorySync(Star):
 
         return f"{self._MEMORY_SESSION_PREFIX}:{platform_id}:{sender_id}"
 
-    @register_on_llm_request()
-    async def on_llm_request(
+    @register_on_waiting_llm_request()
+    async def on_waiting_llm_request(
         self,
         event: AstrMessageEvent,
-        req: ProviderRequest,
     ) -> None:
-        """拦截 LLM 请求，将会话重定向到以用户为维度的统一记忆会话。
+        """在 LLM 请求排队前修改会话来源。
 
-        当同一用户在群聊或私聊中发送消息时，
-        将所有对话路由到同一个持久化会话中，
-        实现记忆共享。
+        此钩子在 build_main_agent 加载对话之前触发，
+        通过修改 event.unified_msg_origin 使后续的对话加载
+        使用以用户为维度的统一会话，实现私聊与群聊记忆共享。
         """
         user_memory_key = self._build_user_memory_key(event)
         if not user_memory_key:
@@ -85,12 +83,13 @@ class ChatMemorySync(Star):
         original_umo = event.unified_msg_origin
 
         # 构造新的统一消息来源（以用户为维度）
+        # 格式: <platform_id>:memory_sync:<user_memory_key>
         new_umo = f"{event.get_platform_id()}:memory_sync:{user_memory_key}"
 
         # 仅当会话确实发生变化时才重定向
         if original_umo != new_umo:
             event.unified_msg_origin = new_umo
-            logger.debug(
+            logger.info(
                 f"[ChatMemorySync] 会话重定向: "
                 f"{original_umo} -> {new_umo} "
                 f"(sender: {event.get_sender_name()}/{event.get_sender_id()})"
